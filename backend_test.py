@@ -32,7 +32,7 @@ class RationFraudDetectionAPITester:
         }
         self.test_results.append(result)
         
-        status = "✅ PASS" if success else "❌ FAIL"
+        status = "[PASS]" if success else "[FAIL]"
         print(f"{status} - {name}")
         if details:
             print(f"    Details: {details}")
@@ -312,22 +312,22 @@ class RationFraudDetectionAPITester:
 
     def run_all_tests(self):
         """Run all API tests"""
-        print("🚀 Starting Ration Fraud Detection API Tests")
+        print("[ROCKET] Starting Ration Fraud Detection API Tests")
         print("=" * 60)
         
         # Authentication Tests
-        print("\n📋 Authentication Tests")
+        print("\n[CLIPBOARD] Authentication Tests")
         admin_data = self.test_admin_registration()
         if not self.test_admin_login(admin_data):
-            print("❌ Cannot proceed without authentication")
+            print("[FAIL] Cannot proceed without authentication")
             return self.generate_report()
 
         # Dashboard Tests
-        print("\n📊 Dashboard Tests")
+        print("\n[CHART] Dashboard Tests")
         self.test_dashboard_stats()
 
         # User Management Tests
-        print("\n👥 User Management Tests")
+        print("\n[USERS] User Management Tests")
         self.test_create_user()
         self.test_get_users()
         self.test_user_search()
@@ -336,23 +336,23 @@ class RationFraudDetectionAPITester:
         self.test_user_status_update()
 
         # Fraud Detection Tests
-        print("\n🔍 Fraud Detection Tests")
+        print("\n[SEARCH] Fraud Detection Tests")
         self.test_fraud_scan()
         self.test_get_fraud_alerts()
         self.test_fraud_alert_filter()
 
         # Transaction Tests
-        print("\n💳 Transaction Tests")
+        print("\n[CARD] Transaction Tests")
         self.test_get_transactions()
 
         # Analytics Tests
-        print("\n📈 Analytics Tests")
+        print("\n[GRAPH] Analytics Tests")
         self.test_analytics_fraud_by_type()
         self.test_analytics_fraud_by_district()
         self.test_analytics_transactions_trend()
 
         # ML Tests
-        print("\n🤖 Machine Learning Tests")
+        print("\n[ML] Machine Learning Tests")
         self.test_ml_status()
         self.test_ml_training()
 
@@ -361,7 +361,7 @@ class RationFraudDetectionAPITester:
     def generate_report(self):
         """Generate test report"""
         print("\n" + "=" * 60)
-        print("📋 TEST SUMMARY")
+        print("[REPORT] TEST SUMMARY")
         print("=" * 60)
         print(f"Total Tests: {self.tests_run}")
         print(f"Passed: {self.tests_passed}")
@@ -371,7 +371,7 @@ class RationFraudDetectionAPITester:
         # Show failed tests
         failed_tests = [test for test in self.test_results if not test['success']]
         if failed_tests:
-            print(f"\n❌ Failed Tests ({len(failed_tests)}):")
+            print(f"\n[FAILED] Failed Tests ({len(failed_tests)}):")
             for test in failed_tests:
                 print(f"  - {test['test_name']}: {test['details']}")
         
@@ -392,7 +392,7 @@ def main():
     with open('/app/test_reports/backend_test_results.json', 'w') as f:
         json.dump(report, f, indent=2)
     
-    print(f"\n📄 Detailed report saved to: /app/test_reports/backend_test_results.json")
+    print(f"\n[REPORT] Detailed report saved to: /app/test_reports/backend_test_results.json")
     
     # Return appropriate exit code
     return 0 if report['failed_tests'] == 0 else 1

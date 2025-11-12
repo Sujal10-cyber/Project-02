@@ -20,10 +20,34 @@ import pandas as pd
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# MongoDB connection - with fallback to mock database
+mongo_available = False
+client = None
+db = None
+
+try:
+    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    from pymongo import MongoClient
+    # Quick check if MongoDB is running
+    try_client = MongoClient(mongo_url, serverSelectionTimeoutMS=1000)
+    try_client.server_info()  # This will raise if server not available
+    try_client.close()
+    
+    # If we got here, MongoDB is available
+    client = AsyncIOMotorClient(mongo_url)
+    db = client[os.environ.get('DB_NAME', 'ration_fraud_detection')]
+    mongo_available = True
+    print("[INFO] Connected to MongoDB successfully")
+except Exception as e:
+    print(f"[INFO] MongoDB not available: {str(e)[:100]}")
+    mongo_available = False
+
+# If MongoDB is not available, use mock database
+if not mongo_available:
+    print("[INFO] Using mock in-memory database instead")
+    from mock_db import MockDatabase
+    db = MockDatabase()
+    client = None
 
 # JWT Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
@@ -308,22 +332,32 @@ fraud_engine = FraudDetectionEngine()
 
 @api_router.post("/auth/register", response_model=AdminUser)
 async def register_admin(admin: AdminUserCreate):
-    # Check if user exists
-    existing = await db.admins.find_one({"email": admin.email}, {"_id": 0})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    admin_obj = AdminUser(
-        username=admin.username,
-        email=admin.email,
-        password_hash=hash_password(admin.password)
-    )
-    
-    doc = admin_obj.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    await db.admins.insert_one(doc)
-    
-    return admin_obj
+    try:
+        # Check if user exists
+        existing = await db.admins.find_one({"email": admin.email}, {"_id": 0})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        admin_obj = AdminUser(
+            username=admin.username,
+            email=admin.email,
+            password_hash=hash_password(admin.password)
+        )
+        
+        doc = admin_obj.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.admins.insert_one(doc)
+        
+        return admin_obj
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        tb = traceback.format_exc()
+        print(f"[ERROR] Registration error: {error_msg}")
+        print(f"[TRACEBACK] {tb}")
+        raise HTTPException(status_code=500, detail=f"Registration error: {error_msg}")
 
 @api_router.post("/auth/login", response_model=Token)
 async def login(credentials: AdminLogin):
@@ -658,7 +692,7 @@ app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -671,4 +705,5 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    if client is not None:
+        client.close()
