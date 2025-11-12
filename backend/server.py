@@ -381,30 +381,44 @@ async def login(credentials: AdminLogin):
 
 @api_router.post("/users", response_model=RationUser)
 async def create_user(user: RationUserCreate, current_user: str = Depends(get_current_user)):
-    # Check for duplicate Aadhaar
-    existing = await db.users.find_one({"aadhaar_id": user.aadhaar_id}, {"_id": 0})
-    if existing:
-        raise HTTPException(status_code=400, detail="Aadhaar ID already registered")
-    
-    user_obj = RationUser(**user.model_dump())
-    doc = user_obj.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    await db.users.insert_one(doc)
-    
-    # Run fraud detection
-    alerts = await fraud_engine.detect_fraud_rules(user_obj.id)
-    for alert in alerts:
-        fraud_alert = FraudAlert(
-            user_id=user_obj.id,
-            fraud_type=alert["fraud_type"],
-            confidence_score=alert["confidence_score"],
-            details=alert["details"]
-        )
-        fraud_doc = fraud_alert.model_dump()
-        fraud_doc['created_at'] = fraud_doc['created_at'].isoformat()
-        await db.fraud_alerts.insert_one(fraud_doc)
-    
-    return user_obj
+    try:
+        # Check for duplicate Aadhaar
+        existing = await db.users.find_one({"aadhaar_id": user.aadhaar_id}, {"_id": 0})
+        if existing:
+            raise HTTPException(status_code=400, detail="Aadhaar ID already registered")
+        
+        user_obj = RationUser(**user.model_dump())
+        doc = user_obj.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.users.insert_one(doc)
+        
+        # Run fraud detection
+        try:
+            alerts = await fraud_engine.detect_fraud_rules(user_obj.id)
+            for alert in alerts:
+                fraud_alert = FraudAlert(
+                    user_id=user_obj.id,
+                    fraud_type=alert["fraud_type"],
+                    confidence_score=alert["confidence_score"],
+                    details=alert["details"]
+                )
+                fraud_doc = fraud_alert.model_dump()
+                fraud_doc['created_at'] = fraud_doc['created_at'].isoformat()
+                await db.fraud_alerts.insert_one(fraud_doc)
+        except Exception as e:
+            # Log fraud detection error but don't fail the user creation
+            print(f"[WARNING] Fraud detection error: {str(e)}")
+        
+        return user_obj
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        tb = traceback.format_exc()
+        print(f"[ERROR] User creation error: {error_msg}")
+        print(f"[TRACEBACK] {tb}")
+        raise HTTPException(status_code=500, detail=f"User creation error: {error_msg}")
 
 @api_router.get("/users", response_model=List[RationUser])
 async def get_users(current_user: str = Depends(get_current_user), 

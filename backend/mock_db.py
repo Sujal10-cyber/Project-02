@@ -7,6 +7,18 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import json
 
+class MockCursor:
+    """Mock MongoDB cursor that supports to_list()"""
+    def __init__(self, data: List[Dict]):
+        self.data = data
+    
+    async def to_list(self, max_length: Optional[int] = None) -> List[Dict]:
+        """Return all documents as a list (compatible with motor.motor_asyncio.AsyncCursor)"""
+        if max_length is None:
+            return self.data
+        return self.data[:max_length]
+
+
 class MockInsertOneResult:
     """Mock insert_one result"""
     def __init__(self, inserted_id):
@@ -71,8 +83,8 @@ class MockCollection:
                 return result
         return None
     
-    async def find(self, query: Dict = None, projection: Dict = None) -> List[Dict]:
-        """Find multiple documents"""
+    async def find(self, query: Dict = None, projection: Dict = None):
+        """Find multiple documents - returns a MockCursor for compatibility with motor"""
         if query is None:
             query = {}
         
@@ -84,7 +96,7 @@ class MockCollection:
                     if "_id" in projection and projection["_id"] == 0:
                         result.pop("_id", None)
                 results.append(result)
-        return results
+        return MockCursor(results)
     
     async def update_one(self, query: Dict, update: Dict) -> MockUpdateResult:
         """Update a single document"""
