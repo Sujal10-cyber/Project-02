@@ -1,0 +1,116 @@
+{
+  "total_tests": 18,
+  "passed_tests": 18,
+  "failed_tests": 0,
+  "success_rate": 100.0,
+  "test_results": [
+    {
+      "test_name": "Admin Registration",
+      "success": true,
+      "details": "Admin ID: c89aeb88-9bf3-4246-95d4-9f043b23ff64",
+      "timestamp": "2025-11-12T17:11:21.188705"
+    },
+    {
+      "test_name": "Admin Login",
+      "success": true,
+      "details": "Token received, User: testadmin_171120",
+      "timestamp": "2025-11-12T17:11:21.454230"
+    },
+    {
+      "test_name": "Dashboard Stats",
+      "success": true,
+      "details": "All stats available: ['total_users', 'active_users', 'flagged_users', 'pending_verifications', 'total_transactions', 'pending_alerts', 'confirmed_frauds', 'recent_users']",
+      "timestamp": "2025-11-12T17:11:21.500535"
+    },
+    {
+      "test_name": "Create User",
+      "success": true,
+      "details": "User ID: 30889ee3-57bc-4325-907c-809bb579557f",
+      "timestamp": "2025-11-12T17:11:21.544460"
+    },
+    {
+      "test_name": "Get Users",
+      "success": true,
+      "details": "Retrieved 51 users",
+      "timestamp": "2025-11-12T17:11:21.587003"
+    },
+    {
+      "test_name": "User Search",
+      "success": true,
+      "details": "Search returned 1 results",
+      "timestamp": "2025-11-12T17:11:21.626509"
+    },
+    {
+      "test_name": "User Status Filter",
+      "success": true,
+      "details": "Filter returned 46 active users",
+      "timestamp": "2025-11-12T17:11:21.664459"
+    },
+    {
+      "test_name": "Aadhaar Verification",
+      "success": true,
+      "details": "Verified: True, Message: Aadhaar verification successful",
+      "timestamp": "2025-11-12T17:11:21.704758"
+    },
+    {
+      "test_name": "User Status Update",
+      "success": true,
+      "details": "User status updated to suspended",
+      "timestamp": "2025-11-12T17:11:21.742182"
+    },
+    {
+      "test_name": "Fraud Scan",
+      "success": true,
+      "details": "Alerts created: 0, Message: Found 0 potential fraud indicators",
+      "timestamp": "2025-11-12T17:11:21.782109"
+    },
+    {
+      "test_name": "Get Fraud Alerts",
+      "success": true,
+      "details": "Retrieved 0 alerts",
+      "timestamp": "2025-11-12T17:11:21.819709"
+    },
+    {
+      "test_name": "Fraud Alert Filter",
+      "success": true,
+      "details": "Filter returned 0 pending alerts",
+      "timestamp": "2025-11-12T17:11:21.897922"
+    },
+    {
+      "test_name": "Get Transactions",
+      "success": true,
+      "details": "Retrieved 200 transactions",
+      "timestamp": "2025-11-12T17:11:21.942745"
+    },
+    {
+      "test_name": "Analytics - Fraud by Type",
+      "success": true,
+      "details": "Retrieved 0 fraud types",
+      "timestamp": "2025-11-12T17:11:21.980470"
+    },
+    {
+      "test_name": "Analytics - Fraud by District",
+      "success": true,
+      "details": "Retrieved 0 districts",
+      "timestamp": "2025-11-12T17:11:22.058874"
+    },
+    {
+      "test_name": "Analytics - Transaction Trends",
+      "success": true,
+      "details": "Retrieved 31 data points",
+      "timestamp": "2025-11-12T17:11:22.102017"
+    },
+    {
+      "test_name": "ML Model Status",
+      "success": true,
+      "details": "Trained: False, Type: Isolation Forest",
+      "timestamp": "2025-11-12T17:11:22.137660"
+    },
+    {
+      "test_name": "ML Model Training",
+      "success": true,
+      "details": "Training success: True, Message: Model trained successfully",
+      "timestamp": "2025-11-12T17:11:22.285024"
+    }
+  ]
+}
