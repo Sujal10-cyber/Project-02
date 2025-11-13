@@ -243,10 +243,11 @@ class FraudDetectionEngine:
         
         # Rule 3: Check transaction frequency
         thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
-        transactions = await db.transactions.find({
+        transactions = db.transactions.find({
             "user_id": user_id,
             "transaction_date": {"$gte": thirty_days_ago.isoformat()}
-        }).to_list(None)
+        })
+        transactions = await transactions.to_list(None)
         
         if len(transactions) > 40:  # More than 40 transactions in 30 days
             alerts.append({
@@ -287,7 +288,8 @@ class FraudDetectionEngine:
     async def train_model(self):
         """Train ML model with transaction data"""
         try:
-            transactions = await db.transactions.find({}, {"_id": 0}).to_list(None)
+            cursor = db.transactions.find({}, {"_id": 0})
+            transactions = await cursor.to_list(None)
             if len(transactions) < 10:
                 return False
             
@@ -433,7 +435,8 @@ async def get_users(current_user: str = Depends(get_current_user),
             {"aadhaar_id": {"$regex": search, "$options": "i"}}
         ]
     
-    users = await db.users.find(query, {"_id": 0}).to_list(1000)
+    cursor = db.users.find(query, {"_id": 0})
+    users = await cursor.to_list(1000)
     for user in users:
         if isinstance(user.get('created_at'), str):
             user['created_at'] = datetime.fromisoformat(user['created_at'])
@@ -518,7 +521,9 @@ async def get_transactions(current_user: str = Depends(get_current_user), user_i
     if user_id:
         query["user_id"] = user_id
     
-    transactions = await db.transactions.find(query, {"_id": 0}).sort("transaction_date", -1).to_list(500)
+    cursor = db.transactions.find(query, {"_id": 0})
+    cursor.sort("transaction_date", -1)
+    transactions = await cursor.to_list(500)
     for txn in transactions:
         if isinstance(txn.get('transaction_date'), str):
             txn['transaction_date'] = datetime.fromisoformat(txn['transaction_date'])
@@ -532,7 +537,9 @@ async def get_fraud_alerts(current_user: str = Depends(get_current_user), status
     if status:
         query["status"] = status
     
-    alerts = await db.fraud_alerts.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    cursor = db.fraud_alerts.find(query, {"_id": 0})
+    cursor.sort("created_at", -1)
+    alerts = await cursor.to_list(500)
     for alert in alerts:
         if isinstance(alert.get('created_at'), str):
             alert['created_at'] = datetime.fromisoformat(alert['created_at'])
@@ -628,7 +635,8 @@ async def get_dashboard_stats(current_user: str = Depends(get_current_user)):
 @api_router.get("/analytics/fraud-by-type")
 async def get_fraud_by_type(current_user: str = Depends(get_current_user)):
     """Get fraud cases grouped by type"""
-    alerts = await db.fraud_alerts.find({}, {"_id": 0}).to_list(None)
+    cursor = db.fraud_alerts.find({}, {"_id": 0})
+    alerts = await cursor.to_list(None)
     
     fraud_types = {}
     for alert in alerts:
@@ -642,7 +650,8 @@ async def get_fraud_by_type(current_user: str = Depends(get_current_user)):
 @api_router.get("/analytics/fraud-by-district")
 async def get_fraud_by_district(current_user: str = Depends(get_current_user)):
     """Get fraud hotspots by district"""
-    alerts = await db.fraud_alerts.find({}, {"_id": 0}).to_list(None)
+    cursor = db.fraud_alerts.find({}, {"_id": 0})
+    alerts = await cursor.to_list(None)
     
     district_map = {}
     for alert in alerts:
@@ -659,9 +668,10 @@ async def get_fraud_by_district(current_user: str = Depends(get_current_user)):
 async def get_transactions_trend(current_user: str = Depends(get_current_user)):
     """Get transaction trends over last 30 days"""
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
-    transactions = await db.transactions.find({
+    cursor = db.transactions.find({
         "transaction_date": {"$gte": thirty_days_ago.isoformat()}
-    }, {"_id": 0}).to_list(None)
+    }, {"_id": 0})
+    transactions = await cursor.to_list(None)
     
     daily_counts = {}
     for txn in transactions:
@@ -694,7 +704,8 @@ async def get_model_status(current_user: str = Depends(get_current_user)):
 
 @api_router.get("/shops", response_model=List[RationShop])
 async def get_shops(current_user: str = Depends(get_current_user)):
-    shops = await db.shops.find({}, {"_id": 0}).to_list(500)
+    cursor = db.shops.find({}, {"_id": 0})
+    shops = await cursor.to_list(500)
     for shop in shops:
         if isinstance(shop.get('created_at'), str):
             shop['created_at'] = datetime.fromisoformat(shop['created_at'])

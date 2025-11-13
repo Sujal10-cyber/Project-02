@@ -8,9 +8,22 @@ from datetime import datetime, timezone
 import json
 
 class MockCursor:
-    """Mock MongoDB cursor that supports to_list()"""
+    """Mock MongoDB cursor that supports to_list() and sort()"""
     def __init__(self, data: List[Dict]):
         self.data = data
+    
+    def sort(self, key_or_list, direction: int = 1):
+        """Sort the cursor (chainable with to_list)"""
+        if isinstance(key_or_list, str):
+            # Single field sort
+            reverse = direction < 0
+            self.data = sorted(self.data, key=lambda x: x.get(key_or_list, ""), reverse=reverse)
+        elif isinstance(key_or_list, list):
+            # Multi-field sort
+            for field, dir_val in reversed(key_or_list):
+                reverse = dir_val < 0
+                self.data = sorted(self.data, key=lambda x: x.get(field, ""), reverse=reverse)
+        return self
     
     async def to_list(self, max_length: Optional[int] = None) -> List[Dict]:
         """Return all documents as a list (compatible with motor.motor_asyncio.AsyncCursor)"""
@@ -83,7 +96,7 @@ class MockCollection:
                 return result
         return None
     
-    async def find(self, query: Dict = None, projection: Dict = None):
+    def find(self, query: Dict = None, projection: Dict = None):
         """Find multiple documents - returns a MockCursor for compatibility with motor"""
         if query is None:
             query = {}
@@ -132,12 +145,62 @@ class MockCollection:
         return count
     
     def _matches_query(self, doc: Dict, query: Dict) -> bool:
-        """Check if document matches query"""
+        """Check if document matches query - supports basic operators"""
+        import re
+        
         for key, value in query.items():
+            # Handle special operators
+            if key == "$or":
+                # $or: at least one condition must match
+                if not any(self._matches_query(doc, cond) for cond in value):
+                    return False
+                continue
+            
             if key not in doc:
                 return False
-            if doc[key] != value:
-                return False
+            
+            # Handle complex queries with operators
+            if isinstance(value, dict):
+                doc_value = doc[key]
+                for op, op_value in value.items():
+                    if op == "$regex":
+                        # Regex matching
+                        pattern = re.compile(op_value, re.IGNORECASE)
+                        if not isinstance(doc_value, str) or not pattern.search(doc_value):
+                            return False
+                    elif op == "$gte":
+                        # Greater than or equal
+                        if doc_value < op_value:
+                            return False
+                    elif op == "$lte":
+                        # Less than or equal
+                        if doc_value > op_value:
+                            return False
+                    elif op == "$gt":
+                        # Greater than
+                        if doc_value <= op_value:
+                            return False
+                    elif op == "$lt":
+                        # Less than
+                        if doc_value >= op_value:
+                            return False
+                    elif op == "$eq":
+                        # Equal
+                        if doc_value != op_value:
+                            return False
+                    elif op == "$ne":
+                        # Not equal
+                        if doc_value == op_value:
+                            return False
+                    elif op == "$in":
+                        # In array
+                        if doc_value not in op_value:
+                            return False
+            else:
+                # Simple equality check
+                if doc[key] != value:
+                    return False
+        
         return True
 
 
